@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ MonsterStrikeQuickRecruiter is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ MonsterStrikeQuickRecruiter is distributed in the hope that it will be useful,
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with MonsterStrikeQuickRecruiter.  If not, see <https://www.gnu.org/licenses/>.
+  -->
+
+<resources>
+    <string name="app_name">怪物彈珠快速招募器</string>
+    <string name="recruit">招募</string>
+    <string name="extremeLuckOnly">僅限極運</string>
+    <string name="appropriateRoleOnly">僅限適正角色</string>
+    <string name="anyoneCan">誰都可以</string>
+    <string name="agree">同意</string>
+    <string name="disagree">不同意</string>
+</resources>
