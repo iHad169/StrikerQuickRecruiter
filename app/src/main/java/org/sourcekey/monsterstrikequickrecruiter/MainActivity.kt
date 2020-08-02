@@ -28,6 +28,8 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.RadioButton
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.MobileAds
 import java.net.URISyntaxException
 
@@ -246,8 +248,10 @@ class MainActivity : AppCompatActivity() {
         //設定招募鍵
         recruitButton = findViewById(R.id.recruitButton)
         recruitButton?.setOnClickListener{ quickRecruit() }
-        //設定廣告
+        //設定橫幅廣告
         MobileAds.initialize(this){}
+        val bottomAdView: AdView = findViewById(R.id.bottomAdView)
+        bottomAdView.loadAd(AdRequest.Builder().build())
     }
 
     override fun onResume() {
