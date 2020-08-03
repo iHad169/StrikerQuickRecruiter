@@ -21,7 +21,6 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
-import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Button
@@ -163,7 +162,6 @@ class MainActivity : AppCompatActivity() {
         webViewSettings?.domStorageEnabled = true
         webViewSettings?.javaScriptEnabled = true//設定同JavaScript互Call權限
         webViewSettings?.javaScriptCanOpenWindowsAutomatically = true//設定允許畀JavaScript彈另一個window
-        webViewSettings?.setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK)//開啟離線網頁功能,為之後上唔到個網都可以用到
         webView?.webViewClient = object : WebViewClient() {
             override fun onPageFinished(webView: WebView, url: String) {
                 super.onPageFinished(webView, url)
