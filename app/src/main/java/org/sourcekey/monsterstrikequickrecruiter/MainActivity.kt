@@ -20,6 +20,7 @@ import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
 import android.util.Log
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -34,7 +35,7 @@ import java.net.URISyntaxException
 
 
 class MainActivity : AppCompatActivity() {
-    val recruiterUrl = "https://gamewith.tw/monsterstrike/lobby"
+    private val recruiterUrl = "https://gamewith.tw/monsterstrike/lobby"
 
     private var saver: SharedPreferences? = null
 
@@ -48,7 +49,7 @@ class MainActivity : AppCompatActivity() {
 
     private var recruitEditText: EditText? = null
 
-    private var recruitButton: Button? = null
+    private val recruitButtonClickWaitTime = 3
 
     /**
      * 顯示使用條款
@@ -73,6 +74,9 @@ class MainActivity : AppCompatActivity() {
         termsConditionsWebView.loadUrl("file:///android_asset/termsConditions.html")
     }
 
+    /**
+     * 從Intent獲取招募訊息
+     * */
     private fun getRecruitText(intent: Intent): String? {
         val data: Uri = intent.data?:return null
         when(data.scheme.toString()){
@@ -100,7 +104,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    enum class ParticipationCondition{
+    /**
+     * 招募條件
+     * */
+    private enum class ParticipationCondition{
         extremeLuckOnly,        //僅限極運
         appropriateRoleOnly,    //僅限適正角色
         anyoneCan;              //誰都可以
@@ -111,6 +118,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * 選擇招募條件
+     * */
     private fun selectRecruitConditions(participationCondition: ParticipationCondition){
         Log.i("屌", participationCondition.name)
         saver?.edit()?.putString("participationCondition", participationCondition.ordinal.toString())?.commit()
@@ -121,6 +131,9 @@ class MainActivity : AppCompatActivity() {
         """.trimMargin())
     }
 
+    /**
+     * 填上招募訊息
+     * */
     private fun pasteRecruit(){
         val recruitText = recruitEditText?.text.toString()
         saver?.edit()?.putString("recruitText", recruitText)?.commit()
@@ -131,6 +144,9 @@ class MainActivity : AppCompatActivity() {
         """.trimMargin())
     }
 
+    /**
+     * 進行招募
+     * */
     private fun executeRecruit(){
         webView?.loadUrl("""javascript:
             |window.setTimeout(function(){
@@ -139,6 +155,9 @@ class MainActivity : AppCompatActivity() {
         """.trimMargin())
     }
 
+    /**
+     * 進入返遊戲
+     * */
     private fun startGame(){
         webView?.loadUrl("""javascript:
             |window.setTimeout(function(){
@@ -147,6 +166,11 @@ class MainActivity : AppCompatActivity() {
         """.trimMargin())
     }
 
+    /**
+     * 快速招募
+     *
+     * 一次過填寫招募所需嘅資訊然後進行招募
+     * */
     private fun quickRecruit(){
         pasteRecruit()
         executeRecruit()
@@ -229,6 +253,38 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * 初始化招募Button
+     * */
+    private fun initRecruitButton(){
+        val recruitButton: Button = findViewById(R.id.recruitButton)
+        var clickWaitTime = 0
+        val handle = Handler()
+        fun setClickTimer(){
+            clickWaitTime = recruitButtonClickWaitTime
+            recruitButton.setText("${getString(R.string.recruit)} ($clickWaitTime)")
+            handle.removeCallbacksAndMessages(null)
+            fun loop(){
+                handle.postDelayed({
+                    clickWaitTime--
+                    if(0 < clickWaitTime){
+                        recruitButton.setText("${getString(R.string.recruit)} ($clickWaitTime)")
+                        loop()
+                    }else{
+                        recruitButton.setText(R.string.recruit)
+                    }
+                }, 1000)
+            }
+            loop()
+        }
+        recruitButton.setOnClickListener{
+            if(clickWaitTime <= 0){
+                quickRecruit()
+                setClickTimer()
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -244,8 +300,7 @@ class MainActivity : AppCompatActivity() {
         recruitEditText = findViewById(R.id.recruitEditText)
         recruitEditText?.setText(getRecruitText(intent)?:saver?.getString("recruitText", ""))
         //設定招募鍵
-        recruitButton = findViewById(R.id.recruitButton)
-        recruitButton?.setOnClickListener{ quickRecruit() }
+        initRecruitButton()
         //設定橫幅廣告
         MobileAds.initialize(this){}
         val bottomAdView: AdView = findViewById(R.id.bottomAdView)
