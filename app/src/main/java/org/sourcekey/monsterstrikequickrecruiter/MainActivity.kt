@@ -130,7 +130,6 @@ class MainActivity : AppCompatActivity() {
      * 選擇招募條件
      * */
     private fun selectRecruitConditions(participationCondition: ParticipationCondition){
-        Log.i("屌", participationCondition.name)
         saver?.edit()?.putString(
             "participationCondition",
             participationCondition.ordinal.toString()
