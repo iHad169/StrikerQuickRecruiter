@@ -330,23 +330,25 @@ class MainActivity : AppCompatActivity() {
                 startActivity(Intent.createChooser(sharingIntent, getString(R.string.share)))
             }
             R.id.supportUsItem -> {
-                val supportUsAd = InterstitialAd(this)
+                val supportUsAd = InterstitialAd(this@MainActivity)
                 supportUsAd.adUnitId = "ca-app-pub-2319576034906153/7505233198"
                 supportUsAd.adListener = object: AdListener() {
                     // Code to be executed when an ad finishes loading.
                     override fun onAdLoaded() {
+                        super.onAdLoaded()
                         supportUsAd.show()
                     }
                     // Code to be executed when an ad request fails.
-                    //override fun onAdFailedToLoad(adError: LoadAdError) {}
+                    //override fun onAdFailedToLoad(adError: LoadAdError) { super.onAdFailedToLoad(adError) }
                     // Code to be executed when the ad is displayed.
-                    //override fun onAdOpened() {}
+                    //override fun onAdOpened() { super.onAdOpened() }
                     // Code to be executed when the user clicks on an ad.
-                    //override fun onAdClicked() {}
+                    //override fun onAdClicked() { super.onAdClicked() }
                     // Code to be executed when the user has left the app.
-                    //override fun onAdLeftApplication() {}
+                    //override fun onAdLeftApplication() { super.onAdLeftApplication() }
                     // Code to be executed when the interstitial ad is closed.
                     override fun onAdClosed() {
+                        super.onAdClosed()
                         Toast.makeText(this@MainActivity, R.string.thankYou, Toast.LENGTH_LONG).show()
                     }
                 }
@@ -392,9 +394,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onPause() {
-        super.onPause()
         webView?.onPause()
+        super.onPause()
+    }
+
+    override fun onStop() {
         webView?.pauseTimers()//如果應用程序已暫停，這可能很有用。
+        super.onStop()
+    }
+
+    override fun onDestroy() {
+        webView?.destroy()
+        super.onDestroy()
     }
 
     override fun onNewIntent(intent: Intent?) {
