@@ -21,4 +21,9 @@
     <string name="anyoneCan">誰都可以</string>
     <string name="agree">同意</string>
     <string name="disagree">不同意</string>
+    <string name="share">分享</string>
+    <string name="supportUs">支持我們</string>
+    <string name="sourceCode">原代碼</string>
+    <string name="useConditions">使用條款</string>
+    <string name="thankYou">感謝!</string>
 </resources>

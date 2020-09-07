@@ -22,20 +22,25 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Button
 import android.widget.EditText
 import android.widget.RadioButton
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.google.android.gms.ads.AdRequest
-import com.google.android.gms.ads.AdView
-import com.google.android.gms.ads.MobileAds
+import com.google.android.gms.ads.*
 import java.net.URISyntaxException
 
 
 class MainActivity : AppCompatActivity() {
     private val recruiterUrl = "https://gamewith.tw/monsterstrike/lobby"
+
+    private val playStoreUrl = "https://play.google.com/store/apps/details?id=org.sourcekey.monsterstrikequickrecruiter"
+
+    private val sourceCodeUrl = "https://github.com/iHad169/MonsterStrikeQuickRecruiter"
 
     private var saver: SharedPreferences? = null
 
@@ -55,7 +60,10 @@ class MainActivity : AppCompatActivity() {
      * 顯示使用條款
      */
     private fun showUseConditions() {
-        val useConditionsDialogLayout = layoutInflater.inflate(R.layout.use_conditions_dialog_layout, null)
+        val useConditionsDialogLayout = layoutInflater.inflate(
+            R.layout.use_conditions_dialog_layout,
+            null
+        )
         AlertDialog.Builder(this)
             .setView(useConditionsDialogLayout)
             .setCancelable(false)
@@ -123,12 +131,17 @@ class MainActivity : AppCompatActivity() {
      * */
     private fun selectRecruitConditions(participationCondition: ParticipationCondition){
         Log.i("屌", participationCondition.name)
-        saver?.edit()?.putString("participationCondition", participationCondition.ordinal.toString())?.commit()
-        webView?.loadUrl("""javascript:
+        saver?.edit()?.putString(
+            "participationCondition",
+            participationCondition.ordinal.toString()
+        )?.commit()
+        webView?.loadUrl(
+            """javascript:
             |window.setTimeout(function(){
                 |document.getElementsByName("js-recruiting-tags")[${participationCondition.ordinal}].checked = true;
             |}, 0);
-        """.trimMargin())
+        """.trimMargin()
+        )
     }
 
     /**
@@ -137,33 +150,39 @@ class MainActivity : AppCompatActivity() {
     private fun pasteRecruit(){
         val recruitText = recruitEditText?.text.toString()
         saver?.edit()?.putString("recruitText", recruitText)?.commit()
-        webView?.loadUrl("""javascript:
+        webView?.loadUrl(
+            """javascript:
             |window.setTimeout(function(){
                 |document.getElementsByClassName("js-recruiting-line-message")[0].value = "${recruitText}";
             |}, 0);
-        """.trimMargin())
+        """.trimMargin()
+        )
     }
 
     /**
      * 進行招募
      * */
     private fun executeRecruit(){
-        webView?.loadUrl("""javascript:
+        webView?.loadUrl(
+            """javascript:
             |window.setTimeout(function(){
                 |document.getElementsByClassName("js-recruiting-button")[0].click();
             |}, 1000);
-        """.trimMargin())
+        """.trimMargin()
+        )
     }
 
     /**
      * 進入返遊戲
      * */
     private fun startGame(){
-        webView?.loadUrl("""javascript:
+        webView?.loadUrl(
+            """javascript:
             |window.setTimeout(function(){
                 |document.getElementsByClassName("js-recruiting-modal-launch")[0].click();
             |}, 4000);
-        """.trimMargin())
+        """.trimMargin()
+        )
     }
 
     /**
@@ -201,18 +220,18 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
-                if (url!!.startsWith("intent://")) {
+                if(url!!.startsWith("intent://")) {
                     try {
                         val context = view!!.context
                         val intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME)
-                        if (intent != null) {
+                        if(intent != null) {
                             view!!.stopLoading()
                             val packageManager = context.packageManager
                             val info = packageManager.resolveActivity(
                                 intent,
                                 PackageManager.MATCH_DEFAULT_ONLY
                             )
-                            if (info != null) {
+                            if(info != null) {
                                 context.startActivity(intent)
                             } else {
                                 val fallbackUrl =
@@ -240,16 +259,26 @@ class MainActivity : AppCompatActivity() {
         extremeLuckOnlyRadioButton      = findViewById(R.id.extremeLuckOnlyRadioButton)
         appropriateRoleOnlyRadioButton  = findViewById(R.id.appropriateRoleOnlyRadioButton)
         anyoneCanRadioButton            = findViewById(R.id.anyoneCanRadioButton)
-        extremeLuckOnlyRadioButton?.setOnClickListener { selectRecruitConditions(ParticipationCondition.extremeLuckOnly) }
-        appropriateRoleOnlyRadioButton?.setOnClickListener { selectRecruitConditions(ParticipationCondition.appropriateRoleOnly) }
+        extremeLuckOnlyRadioButton?.setOnClickListener { selectRecruitConditions(
+            ParticipationCondition.extremeLuckOnly
+        ) }
+        appropriateRoleOnlyRadioButton?.setOnClickListener { selectRecruitConditions(
+            ParticipationCondition.appropriateRoleOnly
+        ) }
         anyoneCanRadioButton?.setOnClickListener { selectRecruitConditions(ParticipationCondition.anyoneCan) }
         val beforeSelectParticipationCondition = ParticipationCondition.valueOf(
             saver?.getString("participationCondition", "0")?.toIntOrNull()?:0
         )?:ParticipationCondition.extremeLuckOnly
         when(beforeSelectParticipationCondition){
-            ParticipationCondition.extremeLuckOnly -> {extremeLuckOnlyRadioButton?.isChecked = true}
-            ParticipationCondition.appropriateRoleOnly -> {appropriateRoleOnlyRadioButton?.isChecked = true}
-            ParticipationCondition.anyoneCan -> {anyoneCanRadioButton?.isChecked = true}
+            ParticipationCondition.extremeLuckOnly -> {
+                extremeLuckOnlyRadioButton?.isChecked = true
+            }
+            ParticipationCondition.appropriateRoleOnly -> {
+                appropriateRoleOnlyRadioButton?.isChecked = true
+            }
+            ParticipationCondition.anyoneCan -> {
+                anyoneCanRadioButton?.isChecked = true
+            }
         }
     }
 
@@ -267,10 +296,10 @@ class MainActivity : AppCompatActivity() {
             fun loop(){
                 handle.postDelayed({
                     clickWaitTime--
-                    if(0 < clickWaitTime){
+                    if(0 < clickWaitTime) {
                         recruitButton.setText("${getString(R.string.recruit)} ($clickWaitTime)")
                         loop()
-                    }else{
+                    } else {
                         recruitButton.setText(R.string.recruit)
                     }
                 }, 1000)
@@ -283,6 +312,55 @@ class MainActivity : AppCompatActivity() {
                 setClickTimer()
             }
         }
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.menu, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when(item.itemId){
+            R.id.shareItem -> {
+                val sharingIntent = Intent(Intent.ACTION_SEND)
+                sharingIntent.type = "text/plain"
+                val shareBody = "${playStoreUrl}"
+                sharingIntent.putExtra(Intent.EXTRA_SUBJECT, getString(R.string.app_name))
+                sharingIntent.putExtra(Intent.EXTRA_TEXT, shareBody)
+                startActivity(Intent.createChooser(sharingIntent, getString(R.string.share)))
+            }
+            R.id.supportUsItem -> {
+                val supportUsAd = InterstitialAd(this)
+                supportUsAd.adUnitId = "ca-app-pub-2319576034906153/7505233198"
+                supportUsAd.adListener = object: AdListener() {
+                    // Code to be executed when an ad finishes loading.
+                    override fun onAdLoaded() {
+                        supportUsAd.show()
+                    }
+                    // Code to be executed when an ad request fails.
+                    //override fun onAdFailedToLoad(adError: LoadAdError) {}
+                    // Code to be executed when the ad is displayed.
+                    //override fun onAdOpened() {}
+                    // Code to be executed when the user clicks on an ad.
+                    //override fun onAdClicked() {}
+                    // Code to be executed when the user has left the app.
+                    //override fun onAdLeftApplication() {}
+                    // Code to be executed when the interstitial ad is closed.
+                    override fun onAdClosed() {
+                        Toast.makeText(this@MainActivity, R.string.thankYou, Toast.LENGTH_LONG).show()
+                    }
+                }
+                supportUsAd.loadAd(AdRequest.Builder().build())
+            }
+            R.id.sourceCodeItem -> {
+                val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(sourceCodeUrl))
+                startActivity(browserIntent)
+            }
+            R.id.useConditionsItem -> {
+                showUseConditions()
+            }
+        }
+        return super.onOptionsItemSelected(item)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -301,7 +379,7 @@ class MainActivity : AppCompatActivity() {
         recruitEditText?.setText(getRecruitText(intent)?:saver?.getString("recruitText", ""))
         //設定招募鍵
         initRecruitButton()
-        //設定橫幅廣告
+        //設定底下廣告
         MobileAds.initialize(this){}
         val bottomAdView: AdView = findViewById(R.id.bottomAdView)
         bottomAdView.loadAd(AdRequest.Builder().build())
