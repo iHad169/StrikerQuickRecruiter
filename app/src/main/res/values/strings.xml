@@ -13,7 +13,7 @@
   -->
 
 <resources>
-    <string name="app_name">Monster Strike Quick Recruiter</string>
+    <string name="app_name">Striker Quick Recruiter</string>
     <string name="recruit">Recruit</string>
     <string name="extremeLuckOnly">ExtremeLuckOnly</string>
     <string name="appropriateRoleOnly">AppropriateRoleOnly</string>

@@ -14,7 +14,7 @@
   -->
 
 <resources>
-    <string name="app_name">怪物彈珠快速招募器</string>
+    <string name="app_name">彈珠手快速招募器</string>
     <string name="recruit">招募</string>
     <string name="extremeLuckOnly">僅限極運</string>
     <string name="appropriateRoleOnly">僅限適正角色</string>

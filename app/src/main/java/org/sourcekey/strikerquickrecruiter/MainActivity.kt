@@ -346,7 +346,7 @@ class MainActivity : AppCompatActivity() {
             }
             R.id.supportUsItem -> {
                 val supportUsAd = InterstitialAd(this@MainActivity)
-                supportUsAd.adUnitId = "ca-app-pub-2319576034906153/7505233198"
+                supportUsAd.adUnitId = "ca-app-pub-2319576034906153/1180884454"
                 supportUsAd.adListener = object: AdListener() {
                     // Code to be executed when an ad finishes loading.
                     override fun onAdLoaded() {
