@@ -25,4 +25,7 @@
     <string name="sourceCode">Source Code</string>
     <string name="useConditions">Use Conditions</string>
     <string name="thankYou">Thank You!</string>
+    <string name="refresh">Refresh</string>
+    <string name="ok">OK</string>
+    <string name="teaching">Teaching</string>
 </resources>

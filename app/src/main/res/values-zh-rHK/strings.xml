@@ -26,4 +26,7 @@
     <string name="sourceCode">原代碼</string>
     <string name="useConditions">使用條款</string>
     <string name="thankYou">感謝!</string>
+    <string name="refresh">刷新</string>
+    <string name="ok">確定</string>
+    <string name="teaching">教學</string>
 </resources>

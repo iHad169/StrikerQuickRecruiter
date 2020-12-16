@@ -31,6 +31,8 @@ import android.widget.RadioButton
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.gms.ads.*
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
+//import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
 import java.net.URISyntaxException
 
 
@@ -69,7 +71,7 @@ class MainActivity : AppCompatActivity() {
             .setPositiveButton(R.string.agree) { dialogInterface, which ->
                 saver?.edit()?.putBoolean("isAgreeUseConditions", true)?.commit()
             }
-            .setNeutralButton(R.string.disagree) { dialogInterface, which ->
+            .setNegativeButton(R.string.disagree) { dialogInterface, which ->
                 saver?.edit()?.putBoolean("isAgreeUseConditions", false)?.commit()
                 finish()
                 System.exit(0)
@@ -79,6 +81,26 @@ class MainActivity : AppCompatActivity() {
         val termsConditionsWebView: WebView = useConditionsDialogLayout.findViewById(R.id.termsConditionsWebView)
         privacyPolicyWebView.loadUrl("file:///android_asset/privacyPolicy.html")
         termsConditionsWebView.loadUrl("file:///android_asset/termsConditions.html")
+    }
+
+    /**
+     * 顯示教學
+     */
+    private fun showTeaching() {
+        val teachingLayout = layoutInflater.inflate(
+            R.layout.teaching_layout,
+            null
+        )
+        AlertDialog.Builder(this)
+            .setTitle(R.string.teaching)
+            .setView(teachingLayout)
+            .setCancelable(true)
+            .setPositiveButton(R.string.ok) { dialogInterface, which ->
+                saver?.edit()?.putBoolean("isWatchTeaching", true)?.commit()
+            }
+            .create().show()
+        val youTubePlayerView = findViewById<YouTubePlayerView>(R.id.teachingYouTubePlayerView)
+        //lifecycle.addObserver(youTubePlayerView)
     }
 
     /**
@@ -208,7 +230,7 @@ class MainActivity : AppCompatActivity() {
                 super.onPageFinished(webView, url)
                 //初始化上次所選嘅RadioButton
                 val beforeSelectParticipationCondition = ParticipationCondition.valueOf(
-                    saver?.getString("participationCondition", "0")?.toIntOrNull()?:0
+                    saver?.getString("participationCondition", "0")?.toIntOrNull() ?: 0
                 )?:ParticipationCondition.extremeLuckOnly
                 selectRecruitConditions(beforeSelectParticipationCondition)
                 //如由怪物彈殊啟動此程式就進行 快速招募
@@ -223,7 +245,7 @@ class MainActivity : AppCompatActivity() {
                         val context = view!!.context
                         val intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME)
                         if(intent != null) {
-                            view!!.stopLoading()
+                            view.stopLoading()
                             val packageManager = context.packageManager
                             val info = packageManager.resolveActivity(
                                 intent,
@@ -232,9 +254,8 @@ class MainActivity : AppCompatActivity() {
                             if(info != null) {
                                 context.startActivity(intent)
                             } else {
-                                val fallbackUrl =
-                                    intent.getStringExtra("browser_fallback_url")
-                                view!!.loadUrl(fallbackUrl)
+                                val fallbackUrl = intent.getStringExtra("browser_fallback_url")?:return false
+                                view.loadUrl(fallbackUrl)
 
                                 // or call external broswer
                                 // Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(fallbackUrl));
@@ -257,7 +278,7 @@ class MainActivity : AppCompatActivity() {
         val beforeSelectParticipationCondition =
             participationCondition?:
             ParticipationCondition.valueOf(
-                saver?.getString("participationCondition", "0")?.toIntOrNull()?:0
+                saver?.getString("participationCondition", "0")?.toIntOrNull() ?: 0
             )?:
             ParticipationCondition.extremeLuckOnly
 
@@ -294,7 +315,7 @@ class MainActivity : AppCompatActivity() {
      * 更新招募EditText
      * */
     private fun updateRecruitEditText(text: String? = null){
-        recruitEditText?.setText(text?:saver?.getString("recruitText", ""))
+        recruitEditText?.setText(text ?: saver?.getString("recruitText", ""))
     }
 
     /**
@@ -311,7 +332,7 @@ class MainActivity : AppCompatActivity() {
             fun loop(){
                 handle.postDelayed({
                     clickWaitTime--
-                    if(0 < clickWaitTime) {
+                    if (0 < clickWaitTime) {
                         recruitButton.setText("${getString(R.string.recruit)} ($clickWaitTime)")
                         loop()
                     } else {
@@ -336,10 +357,13 @@ class MainActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when(item.itemId){
+            R.id.refreshItem -> {
+                webView?.reload()
+            }
             R.id.shareItem -> {
                 val sharingIntent = Intent(Intent.ACTION_SEND)
                 sharingIntent.type = "text/plain"
-                val shareBody = "${playStoreUrl}"
+                val shareBody = playStoreUrl
                 sharingIntent.putExtra(Intent.EXTRA_SUBJECT, getString(R.string.app_name))
                 sharingIntent.putExtra(Intent.EXTRA_TEXT, shareBody)
                 startActivity(Intent.createChooser(sharingIntent, getString(R.string.share)))
@@ -347,12 +371,13 @@ class MainActivity : AppCompatActivity() {
             R.id.supportUsItem -> {
                 val supportUsAd = InterstitialAd(this@MainActivity)
                 supportUsAd.adUnitId = "ca-app-pub-2319576034906153/1180884454"
-                supportUsAd.adListener = object: AdListener() {
+                supportUsAd.adListener = object : AdListener() {
                     // Code to be executed when an ad finishes loading.
                     override fun onAdLoaded() {
                         super.onAdLoaded()
                         supportUsAd.show()
                     }
+
                     // Code to be executed when an ad request fails.
                     //override fun onAdFailedToLoad(adError: LoadAdError) { super.onAdFailedToLoad(adError) }
                     // Code to be executed when the ad is displayed.
@@ -376,6 +401,9 @@ class MainActivity : AppCompatActivity() {
             R.id.useConditionsItem -> {
                 showUseConditions()
             }
+            R.id.teachingItem -> {
+                showTeaching()
+            }
         }
         return super.onOptionsItemSelected(item)
     }
@@ -385,6 +413,8 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         //設定資料saver
         saver = getSharedPreferences("MonsterStrikeQuickRecruiter", 0)
+        //顯示教學
+        if(saver?.getBoolean("isWatchTeaching", false) != true){showTeaching()}
         //顯示使用條款
         if(saver?.getBoolean("isAgreeUseConditions", false) != true){showUseConditions()}
         //設定webView
@@ -427,7 +457,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
-        val recruitText = getRecruitText(intent?:return)?:return
+        val recruitText = getRecruitText(intent ?: return)?:return
         updateRecruitEditText(recruitText)
         quickRecruit()
     }
