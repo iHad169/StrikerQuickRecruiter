@@ -29,4 +29,7 @@
     <string name="refresh">刷新</string>
     <string name="ok">確定</string>
     <string name="teaching">教學</string>
+    <string name="youNeedWatchTeaching">你需要看教學?</string>
+    <string name="need">需要</string>
+    <string name="notNeed">不需要</string>
 </resources>

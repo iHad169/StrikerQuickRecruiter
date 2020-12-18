@@ -28,4 +28,7 @@
     <string name="refresh">Refresh</string>
     <string name="ok">OK</string>
     <string name="teaching">Teaching</string>
+    <string name="youNeedWatchTeaching">You Need Watch Teaching?</string>
+    <string name="need">Need</string>
+    <string name="notNeed">Not Need</string>
 </resources>

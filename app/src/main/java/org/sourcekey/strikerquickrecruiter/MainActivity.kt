@@ -14,6 +14,7 @@
 
 package org.sourcekey.strikerquickrecruiter
 
+//import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
 import android.app.AlertDialog
 import android.content.Intent
 import android.content.SharedPreferences
@@ -31,8 +32,6 @@ import android.widget.RadioButton
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.gms.ads.*
-import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
-//import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
 import java.net.URISyntaxException
 
 
@@ -40,6 +39,8 @@ class MainActivity : AppCompatActivity() {
     private val recruiterUrl = "https://gamewith.tw/monsterstrike/lobby"
 
     private val playStoreUrl = "https://play.google.com/store/apps/details?id=org.sourcekey.strikerquickrecruiter"
+
+    private val teachingURL = "https://youtube.com/watch?v=syl0QVo05ks"
 
     private val sourceCodeUrl = "https://github.com/iHad169/StrikerQuickRecruiter"
 
@@ -87,6 +88,7 @@ class MainActivity : AppCompatActivity() {
      * 顯示教學
      */
     private fun showTeaching() {
+        /**
         val teachingLayout = layoutInflater.inflate(
             R.layout.teaching_layout,
             null
@@ -101,6 +103,19 @@ class MainActivity : AppCompatActivity() {
             .create().show()
         val youTubePlayerView = findViewById<YouTubePlayerView>(R.id.teachingYouTubePlayerView)
         //lifecycle.addObserver(youTubePlayerView)
+        */
+        AlertDialog.Builder(this)
+            .setTitle(R.string.teaching)
+            .setMessage(R.string.youNeedWatchTeaching)
+            .setCancelable(true)
+            .setPositiveButton(R.string.need) { dialogInterface, which ->
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(teachingURL)))
+                saver?.edit()?.putBoolean("isWatchTeaching", true)?.commit()
+            }
+            .setNegativeButton(R.string.notNeed) { dialogInterface, which ->
+                saver?.edit()?.putBoolean("isWatchTeaching", true)?.commit()
+            }
+            .create().show()
     }
 
     /**
@@ -389,7 +404,8 @@ class MainActivity : AppCompatActivity() {
                     // Code to be executed when the interstitial ad is closed.
                     override fun onAdClosed() {
                         super.onAdClosed()
-                        Toast.makeText(this@MainActivity, R.string.thankYou, Toast.LENGTH_LONG).show()
+                        Toast.makeText(this@MainActivity, R.string.thankYou, Toast.LENGTH_LONG)
+                            .show()
                     }
                 }
                 supportUsAd.loadAd(AdRequest.Builder().build())
