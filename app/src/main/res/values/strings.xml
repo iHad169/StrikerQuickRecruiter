@@ -31,4 +31,7 @@
     <string name="youNeedWatchTeaching">You Need Watch Teaching?</string>
     <string name="need">Need</string>
     <string name="notNeed">Not Need</string>
+    <string name="willAutomaticSelect">Will Automatic Select</string>
+    <string name="seconds">Seconds</string>
+    <string name="copied">Copied</string>
 </resources>

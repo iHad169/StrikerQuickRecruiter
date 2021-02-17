@@ -24,8 +24,8 @@ android {
         applicationId "org.sourcekey.strikerquickrecruiter"
         minSdkVersion 17
         targetSdkVersion 30
-        versionCode 8
-        versionName "v8.0"
+        versionCode 9
+        versionName "v9.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }

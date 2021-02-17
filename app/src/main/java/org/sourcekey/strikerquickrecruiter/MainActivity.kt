@@ -15,9 +15,10 @@
 package org.sourcekey.strikerquickrecruiter
 
 //import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
+
+import android.R.attr.label
 import android.app.AlertDialog
-import android.content.Intent
-import android.content.SharedPreferences
+import android.content.*
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
@@ -36,9 +37,11 @@ import java.net.URISyntaxException
 
 
 class MainActivity : AppCompatActivity() {
+
     private val recruiterUrl = "https://gamewith.tw/monsterstrike/lobby"
 
-    private val playStoreUrl = "https://play.google.com/store/apps/details?id=org.sourcekey.strikerquickrecruiter"
+    private val playStoreUrl =
+        "https://play.google.com/store/apps/details?id=org.sourcekey.strikerquickrecruiter"
 
     private val teachingURL = "https://youtube.com/watch?v=syl0QVo05ks"
 
@@ -56,7 +59,70 @@ class MainActivity : AppCompatActivity() {
 
     private var recruitEditText: EditText? = null
 
-    private val recruitButtonClickWaitTime = 3
+    private val recruitButtonClickWaitTime: Long = 3000
+
+    private val recruitWillAutomaticSelectWaitTime: Long = 5000
+
+    /**
+     * 招募條件
+     * */
+    private enum class ParticipationCondition(val resourceId: Int) {
+        //僅限極運
+        extremeLuckOnly(R.string.extremeLuckOnly) {
+            override fun toString(): String = context?.getString(resourceId) ?: toString()
+        },
+
+        //僅限適正角色
+        appropriateRoleOnly(R.string.appropriateRoleOnly) {
+            override fun toString(): String = context?.getString(resourceId) ?: toString()
+        },
+
+        //誰都可以
+        anyoneCan(R.string.anyoneCan) {
+            override fun toString(): String = context?.getString(resourceId) ?: toString()
+        };
+
+        companion object {
+            var context: Context? = null
+            fun valueOf(value: Int): ParticipationCondition? {
+                return values().getOrNull(value)
+            }
+
+            fun strings(): Array<String> {
+                return values().map { it.toString() }.toTypedArray()
+            }
+        }
+    }
+
+    private val initParticipationCondition = { ParticipationCondition.context = this }()
+
+    /**
+     * 設置倒時器
+     * */
+    private fun setTimer(
+        onUpdate: (remainingTime: Long) -> Unit,
+        onTimeout: () -> Unit,
+        delayTime: Long,
+        updateTime: Long = 1000,
+        infinityLoop: Boolean = false
+    ) {
+        var waitTime = delayTime
+        val handler = Handler()
+        handler.removeCallbacksAndMessages(null)
+        fun loop() {
+            handler.postDelayed({
+                waitTime -= updateTime
+                if (0 < waitTime || infinityLoop) {
+                    onUpdate(waitTime)
+                    loop()
+                } else {
+                    onTimeout()
+                }
+            }, updateTime)
+        }
+        onUpdate(waitTime)
+        loop()
+    }
 
     /**
      * 顯示使用條款
@@ -78,8 +144,10 @@ class MainActivity : AppCompatActivity() {
                 System.exit(0)
             }
             .create().show()
-        val privacyPolicyWebView: WebView = useConditionsDialogLayout.findViewById(R.id.privacyPolicyWebView)
-        val termsConditionsWebView: WebView = useConditionsDialogLayout.findViewById(R.id.termsConditionsWebView)
+        val privacyPolicyWebView: WebView =
+            useConditionsDialogLayout.findViewById(R.id.privacyPolicyWebView)
+        val termsConditionsWebView: WebView =
+            useConditionsDialogLayout.findViewById(R.id.termsConditionsWebView)
         privacyPolicyWebView.loadUrl("file:///android_asset/privacyPolicy.html")
         termsConditionsWebView.loadUrl("file:///android_asset/termsConditions.html")
     }
@@ -90,20 +158,20 @@ class MainActivity : AppCompatActivity() {
     private fun showTeaching() {
         /**
         val teachingLayout = layoutInflater.inflate(
-            R.layout.teaching_layout,
-            null
+        R.layout.teaching_layout,
+        null
         )
         AlertDialog.Builder(this)
-            .setTitle(R.string.teaching)
-            .setView(teachingLayout)
-            .setCancelable(true)
-            .setPositiveButton(R.string.ok) { dialogInterface, which ->
-                saver?.edit()?.putBoolean("isWatchTeaching", true)?.commit()
-            }
-            .create().show()
+        .setTitle(R.string.teaching)
+        .setView(teachingLayout)
+        .setCancelable(true)
+        .setPositiveButton(R.string.ok) { dialogInterface, which ->
+        saver?.edit()?.putBoolean("isWatchTeaching", true)?.commit()
+        }
+        .create().show()
         val youTubePlayerView = findViewById<YouTubePlayerView>(R.id.teachingYouTubePlayerView)
         //lifecycle.addObserver(youTubePlayerView)
-        */
+         */
         AlertDialog.Builder(this)
             .setTitle(R.string.teaching)
             .setMessage(R.string.youNeedWatchTeaching)
@@ -122,8 +190,8 @@ class MainActivity : AppCompatActivity() {
      * 從Intent獲取招募訊息
      * */
     private fun getRecruitText(intent: Intent): String? {
-        val data: Uri = intent.data?:return null
-        when(data.scheme.toString()){
+        val data: Uri = intent.data ?: return null
+        when (data.scheme.toString()) {
             "line" -> {
                 return data.path
             }
@@ -149,74 +217,114 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * 招募條件
+     * 響WebView執行JavaScript程序
+     *
+     * 發現如直接寫JS程序
+     * 唔加setTimeout()
+     * 會執行無效
      * */
-    private enum class ParticipationCondition{
-        extremeLuckOnly,        //僅限極運
-        appropriateRoleOnly,    //僅限適正角色
-        anyoneCan;              //誰都可以
-        companion object{
-            fun valueOf(value: Int): ParticipationCondition? {
-                return values().getOrNull(value)
-            }
-        }
+    private fun WebView.runJS(jsCode: String, delay: Int = 0) {
+        loadUrl("""javascript:window.setTimeout(function(){$jsCode}, ${delay});""")
+    }
+
+    /**
+     * 包裝成 設置Node改變左嘅監聽器 嘅JS程序
+     * */
+    private fun wrapSetNodeChangedListener(
+        listenClassName: String,
+        attributeName: String,
+        runJsThenListened: String,
+        infinityLoop: Boolean = false
+    ): String {
+        /*runJS("""
+            |var element = document.getElementsByClassName("$listClassName")[0];
+            |var mutationObserver = new MutationObserver(function(mutationsList, observer){
+                |mutationsList.forEach(function(mutation){
+                    |$runJsThenListed
+                    |mutationObserver.disconnect();
+                |})
+            |});
+            |mutationObserver.observe(element, { attributes: true });
+        """.trimIndent())*/
+        /*runJS("""
+            |document.getElementsByClassName("$listClassName").forEach(function(element){
+                |var mutationObserver = new MutationObserver(function(mutationsList, observer){
+                    |mutationsList.forEach(function(mutation){
+                        |$runJsThenListed
+                        |mutationObserver.disconnect();
+                    |})
+                |});
+                |mutationObserver.observe(element, { attributes: true });
+            |});
+        """.trimIndent())*/
+        return """
+            document.querySelectorAll(".$listenClassName").forEach(function(element){
+                var originalValue = element.getAttribute("$attributeName");
+                var timer = window.setInterval(function(){
+                    var currentValue = element.getAttribute("$attributeName");
+                    if(originalValue !== currentValue){
+                        $runJsThenListened
+                        if(!$infinityLoop){clearInterval(timer);}
+                    }
+                }, 1000);
+            });
+        """
     }
 
     /**
      * 選擇招募條件
      * */
-    private fun selectRecruitConditions(participationCondition: ParticipationCondition){
+    private fun selectRecruitConditions(participationCondition: ParticipationCondition) {
         saver?.edit()?.putString(
             "participationCondition",
             participationCondition.ordinal.toString()
         )?.commit()
-        webView?.loadUrl(
-            """javascript:
-            |window.setTimeout(function(){
-                |document.getElementsByName("js-recruiting-tags")[${participationCondition.ordinal}].checked = true;
-            |}, 0);
-        """.trimMargin()
-        )
+        webView?.runJS("""document.getElementsByName("js-recruiting-tags")[${participationCondition.ordinal}].checked = true;""")
     }
 
     /**
      * 填上招募訊息
      * */
-    private fun pasteRecruit(){
+    private fun pasteRecruit() {
         val recruitText = recruitEditText?.text.toString()
         saver?.edit()?.putString("recruitText", recruitText)?.commit()
-        webView?.loadUrl(
-            """javascript:
-            |window.setTimeout(function(){
-                |document.getElementsByClassName("js-recruiting-line-message")[0].value = "${recruitText}";
-            |}, 0);
-        """.trimMargin()
-        )
+        webView?.runJS("""document.getElementsByClassName("js-recruiting-line-message")[0].value = "${recruitText}";""")
     }
 
     /**
      * 進行招募
      * */
-    private fun executeRecruit(){
-        webView?.loadUrl(
-            """javascript:
-            |window.setTimeout(function(){
-                |document.getElementsByClassName("js-recruiting-button")[0].click();
-            |}, 1000);
-        """.trimMargin()
-        )
+    private fun executeRecruit() {
+        webView?.runJS("""document.getElementsByClassName("js-recruiting-button")[0].click();""")
     }
 
     /**
      * 進入返遊戲
      * */
-    private fun startGame(){
-        webView?.loadUrl(
-            """javascript:
-            |window.setTimeout(function(){
-                |document.getElementsByClassName("js-recruiting-modal-launch")[0].click();
-            |}, 4000);
-        """.trimMargin()
+    private fun startGame() {
+        webView?.runJS(
+            wrapSetNodeChangedListener(
+                "js-recruiting-modal-content-loading", "style",
+                """document.getElementsByClassName("js-recruiting-modal-launch")[0].click();"""
+            )
+        )
+    }
+
+    /**
+     * 初始化 参加招募者團隊 按鈕
+     * */
+    private fun initParticipateButton() {
+        webView?.runJS(
+            """
+                window.setInterval(function(){
+                    document.querySelectorAll(".js-participate-anchor-launch").forEach(function(element){
+                        if(element.href.startsWith("intent://")){
+                            element.click();
+                            element.parentNode.removeChild(element);
+                        }
+                    });
+                }, 1000);
+            """
         )
     }
 
@@ -225,79 +333,26 @@ class MainActivity : AppCompatActivity() {
      *
      * 一次過填寫招募所需嘅資訊然後進行招募
      * */
-    private fun quickRecruit(){
+    private fun quickRecruit() {
         pasteRecruit()
         executeRecruit()
         startGame()
     }
 
     /**
-     * 初始化WebView
+     * 獲取上次所選嘅參加條件RadioButton
      * */
-    private fun initWebView(){
-        webView = findViewById(R.id.webView)
-        val webViewSettings = webView?.settings
-        webViewSettings?.domStorageEnabled = true
-        webViewSettings?.javaScriptEnabled = true//設定同JavaScript互Call權限
-        webViewSettings?.javaScriptCanOpenWindowsAutomatically = true//設定允許畀JavaScript彈另一個window
-        webView?.webViewClient = object : WebViewClient() {
-            override fun onPageFinished(webView: WebView, url: String) {
-                super.onPageFinished(webView, url)
-                //初始化上次所選嘅RadioButton
-                val beforeSelectParticipationCondition = ParticipationCondition.valueOf(
-                    saver?.getString("participationCondition", "0")?.toIntOrNull() ?: 0
-                )?:ParticipationCondition.extremeLuckOnly
-                selectRecruitConditions(beforeSelectParticipationCondition)
-                //如由怪物彈殊啟動此程式就進行 快速招募
-                if(getRecruitText(intent) != null){
-                    quickRecruit()
-                }
-            }
-
-            override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
-                if(url!!.startsWith("intent://")) {
-                    try {
-                        val context = view!!.context
-                        val intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME)
-                        if(intent != null) {
-                            view.stopLoading()
-                            val packageManager = context.packageManager
-                            val info = packageManager.resolveActivity(
-                                intent,
-                                PackageManager.MATCH_DEFAULT_ONLY
-                            )
-                            if(info != null) {
-                                context.startActivity(intent)
-                            } else {
-                                val fallbackUrl = intent.getStringExtra("browser_fallback_url")?:return false
-                                view.loadUrl(fallbackUrl)
-
-                                // or call external broswer
-                                // Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(fallbackUrl));
-                                // context.startActivity(browserIntent);
-                            }
-                            return true
-                        }
-                    } catch (e: URISyntaxException) { }
-                }
-                return false
-            }
-        }
-        webView?.loadUrl(recruiterUrl)
+    private fun getLastTimeSelectParticipationCondition(): ParticipationCondition {
+        return ParticipationCondition.valueOf(
+            saver?.getString("participationCondition", "0")?.toIntOrNull() ?: 0
+        ) ?: ParticipationCondition.extremeLuckOnly
     }
 
     /**
      * 更新參加條件RadioButton
      * */
-    private fun updateParticipationConditionRadioButton(participationCondition: ParticipationCondition? = null){
-        val beforeSelectParticipationCondition =
-            participationCondition?:
-            ParticipationCondition.valueOf(
-                saver?.getString("participationCondition", "0")?.toIntOrNull() ?: 0
-            )?:
-            ParticipationCondition.extremeLuckOnly
-
-        when(beforeSelectParticipationCondition){
+    private fun updateParticipationConditionRadioButton(participationCondition: ParticipationCondition? = null) {
+        when (participationCondition ?: getLastTimeSelectParticipationCondition()) {
             ParticipationCondition.extremeLuckOnly -> {
                 extremeLuckOnlyRadioButton?.isChecked = true
             }
@@ -313,54 +368,161 @@ class MainActivity : AppCompatActivity() {
     /**
      * 初始化參加條件RadioButton
      * */
-    private fun initParticipationConditionRadioButton(){
-        extremeLuckOnlyRadioButton      = findViewById(R.id.extremeLuckOnlyRadioButton)
-        appropriateRoleOnlyRadioButton  = findViewById(R.id.appropriateRoleOnlyRadioButton)
-        anyoneCanRadioButton            = findViewById(R.id.anyoneCanRadioButton)
-        extremeLuckOnlyRadioButton?.setOnClickListener { selectRecruitConditions(
-            ParticipationCondition.extremeLuckOnly
-        ) }
-        appropriateRoleOnlyRadioButton?.setOnClickListener { selectRecruitConditions(
-            ParticipationCondition.appropriateRoleOnly
-        ) }
-        anyoneCanRadioButton?.setOnClickListener { selectRecruitConditions(ParticipationCondition.anyoneCan) }
+    private fun initParticipationConditionRadioButton() {
+        extremeLuckOnlyRadioButton = findViewById(R.id.extremeLuckOnlyRadioButton)
+        appropriateRoleOnlyRadioButton = findViewById(R.id.appropriateRoleOnlyRadioButton)
+        anyoneCanRadioButton = findViewById(R.id.anyoneCanRadioButton)
+        extremeLuckOnlyRadioButton?.setOnCheckedChangeListener { compoundButton, b ->
+            if (b) {
+                selectRecruitConditions(ParticipationCondition.extremeLuckOnly)
+            }
+        }
+        appropriateRoleOnlyRadioButton?.setOnCheckedChangeListener { compoundButton, b ->
+            if (b) {
+                selectRecruitConditions(ParticipationCondition.appropriateRoleOnly)
+            }
+        }
+        anyoneCanRadioButton?.setOnCheckedChangeListener { compoundButton, b ->
+            if (b) {
+                selectRecruitConditions(ParticipationCondition.anyoneCan)
+            }
+        }
+    }
+
+    /**
+     * 顯示招募條件選擇
+     * */
+    private fun showSelectParticipationCondition() {
+        //新增底下廣告Layout
+        val bottomAdDialogLayout = layoutInflater.inflate(
+            R.layout.bottom_ad_dialog_layout,
+            null
+        )
+        //設定底下廣告
+        MobileAds.initialize(this) {}
+        val bottomAdView: AdView = bottomAdDialogLayout.findViewById(R.id.bottomAdView)
+        bottomAdView.loadAd(AdRequest.Builder().build())
+        //設置Dialog
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(R.string.teaching)
+            .setView(bottomAdDialogLayout)
+            .setCancelable(true)
+            .setSingleChoiceItems(
+                ParticipationCondition.strings(),
+                getLastTimeSelectParticipationCondition().ordinal
+            ) { di, i ->
+                updateParticipationConditionRadioButton(ParticipationCondition.valueOf(i))
+                di?.dismiss()
+            }
+            .setOnDismissListener { quickRecruit() }
+            .setOnCancelListener { quickRecruit() }
+            .create()
+        dialog.show()
+        //設置倒時器
+        setTimer(fun(rt) {
+            val waitTime = rt.toInt() / 1000
+            val message =
+                "${getString(R.string.willAutomaticSelect)} (${waitTime}${getString(R.string.seconds)})"
+            dialog.setTitle(message)
+        }, fun() { dialog.dismiss() }, recruitWillAutomaticSelectWaitTime)
+    }
+
+    /**
+     * 初始化WebView
+     * */
+    private fun initWebView() {
+        webView = findViewById(R.id.webView)
+        val webViewSettings = webView?.settings
+        webViewSettings?.domStorageEnabled = true
+        webViewSettings?.javaScriptEnabled = true//設定同JavaScript互Call權限
+        webViewSettings?.javaScriptCanOpenWindowsAutomatically = true//設定允許畀JavaScript彈另一個window
+        webView?.webViewClient = object : WebViewClient() {
+            override fun onPageFinished(webView: WebView, url: String) {
+                super.onPageFinished(webView, url)
+                //初始化 参加招募者團隊 按鈕
+                initParticipateButton()
+                //初始化上次所選嘅RadioButton
+                selectRecruitConditions(getLastTimeSelectParticipationCondition())
+                //如由怪物彈殊啟動此程式就顯示招募條件選擇
+                if (getRecruitText(intent) != null) {
+                    showSelectParticipationCondition()
+                }
+            }
+
+            override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
+                if (url!!.startsWith("intent://")) {
+                    //Toast.makeText(this@MainActivity, url, Toast.LENGTH_SHORT).show()
+                    try {
+                        val context = view!!.context
+                        val intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME)
+                        if (intent != null) {
+                            view.stopLoading()
+                            val packageManager = context.packageManager
+                            val info = packageManager.resolveActivity(
+                                intent,
+                                PackageManager.MATCH_DEFAULT_ONLY
+                            )
+                            if (info != null) {
+                                context.startActivity(intent)
+                            } else {
+                                val fallbackUrl =
+                                    intent.getStringExtra("browser_fallback_url") ?: return false
+                                view.loadUrl(fallbackUrl)
+
+                                // or call external broswer
+                                // Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(fallbackUrl));
+                                // context.startActivity(browserIntent);
+                            }
+                            return true
+                        }
+                    } catch (e: URISyntaxException) {
+                    }
+                }
+                return false
+            }
+        }
+        webView?.loadUrl(recruiterUrl)
     }
 
     /**
      * 更新招募EditText
      * */
-    private fun updateRecruitEditText(text: String? = null){
+    private fun updateRecruitEditText(text: String? = null) {
         recruitEditText?.setText(text ?: saver?.getString("recruitText", ""))
+    }
+
+    /**
+     * 設定招募文字
+     * */
+    private fun initRecruitEditText() {
+        recruitEditText = findViewById(R.id.recruitEditText)
+        recruitEditText?.setOnClickListener {
+            //設定Click-To-Copy功能
+            val clipboard: ClipboardManager =
+                getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+            val clip = ClipData.newPlainText("EditText", recruitEditText?.text.toString())
+            clipboard.setPrimaryClip(clip)
+            //提示 已複製 成功
+            Toast.makeText(this@MainActivity, getString(R.string.copied), Toast.LENGTH_SHORT).show()
+        }
     }
 
     /**
      * 初始化招募Button
      * */
-    private fun initRecruitButton(){
+    private fun initRecruitButton() {
         val recruitButton: Button = findViewById(R.id.recruitButton)
         var clickWaitTime = 0
-        val handle = Handler()
-        fun setClickTimer(){
-            clickWaitTime = recruitButtonClickWaitTime
-            recruitButton.setText("${getString(R.string.recruit)} ($clickWaitTime)")
-            handle.removeCallbacksAndMessages(null)
-            fun loop(){
-                handle.postDelayed({
-                    clickWaitTime--
-                    if (0 < clickWaitTime) {
-                        recruitButton.setText("${getString(R.string.recruit)} ($clickWaitTime)")
-                        loop()
-                    } else {
-                        recruitButton.setText(R.string.recruit)
-                    }
-                }, 1000)
-            }
-            loop()
-        }
-        recruitButton.setOnClickListener{
-            if(clickWaitTime <= 0){
+        recruitButton.setOnClickListener {
+            if (clickWaitTime <= 0) {
                 quickRecruit()
-                setClickTimer()
+                setTimer(fun(rt) {
+                    clickWaitTime = rt.toInt() / 1000
+                    recruitButton.setText("${getString(R.string.recruit)} ($clickWaitTime)")
+                }, fun() {
+                    clickWaitTime = 0
+                    recruitButton.setText(R.string.recruit)
+                }, recruitButtonClickWaitTime)
             }
         }
     }
@@ -371,9 +533,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        when(item.itemId){
+        when (item.itemId) {
             R.id.refreshItem -> {
-                webView?.reload()
+                //webView?.reload()
+                webView?.loadUrl(recruiterUrl)
             }
             R.id.shareItem -> {
                 val sharingIntent = Intent(Intent.ACTION_SEND)
@@ -430,19 +593,23 @@ class MainActivity : AppCompatActivity() {
         //設定資料saver
         saver = getSharedPreferences("MonsterStrikeQuickRecruiter", 0)
         //顯示教學
-        if(saver?.getBoolean("isWatchTeaching", false) != true){showTeaching()}
+        if (saver?.getBoolean("isWatchTeaching", false) != true) {
+            showTeaching()
+        }
         //顯示使用條款
-        if(saver?.getBoolean("isAgreeUseConditions", false) != true){showUseConditions()}
+        if (saver?.getBoolean("isAgreeUseConditions", false) != true) {
+            showUseConditions()
+        }
         //設定webView
         initWebView()
         //設定參加條件RadioButton
         initParticipationConditionRadioButton()
         //設定招募文字
-        recruitEditText = findViewById(R.id.recruitEditText)
+        initRecruitEditText()
         //設定招募鍵
         initRecruitButton()
         //設定底下廣告
-        MobileAds.initialize(this){}
+        MobileAds.initialize(this) {}
         val bottomAdView: AdView = findViewById(R.id.bottomAdView)
         bottomAdView.loadAd(AdRequest.Builder().build())
     }
@@ -473,7 +640,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
-        val recruitText = getRecruitText(intent ?: return)?:return
+        val recruitText = getRecruitText(intent ?: return) ?: return
         updateRecruitEditText(recruitText)
         quickRecruit()
     }

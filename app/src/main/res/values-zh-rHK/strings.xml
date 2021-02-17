@@ -32,4 +32,7 @@
     <string name="youNeedWatchTeaching">你需要看教學?</string>
     <string name="need">需要</string>
     <string name="notNeed">不需要</string>
+    <string name="willAutomaticSelect">將自動選擇</string>
+    <string name="seconds">秒</string>
+    <string name="copied">已複製</string>
 </resources>
