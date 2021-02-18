@@ -37,7 +37,7 @@
         android:layout_weight="2"
         android:background="#FFFFFF"
         android:orientation="horizontal"
-        app:layout_constraintBottom_toTopOf="@+id/recruitEditText"
+        app:layout_constraintBottom_toTopOf="@+id/recruitTextView"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent">
@@ -65,8 +65,8 @@
             android:text="@string/anyoneCan" />
     </RadioGroup>
 
-    <EditText
-        android:id="@+id/recruitEditText"
+    <TextView
+        android:id="@+id/recruitTextView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_weight="2"
@@ -92,6 +92,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
+        android:background="@color/colorPrimaryDark"
         app:adSize="SMART_BANNER"
         app:adUnitId="ca-app-pub-2319576034906153/4638759646"
         app:layout_constraintBottom_toBottomOf="parent"

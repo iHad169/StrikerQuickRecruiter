@@ -28,7 +28,7 @@ import android.view.MenuItem
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Button
-import android.widget.EditText
+import android.widget.TextView
 import android.widget.RadioButton
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -57,7 +57,7 @@ class MainActivity : AppCompatActivity() {
 
     private var anyoneCanRadioButton: RadioButton? = null
 
-    private var recruitEditText: EditText? = null
+    private var recruitTextView: TextView? = null
 
     private val recruitButtonClickWaitTime: Long = 3000
 
@@ -94,7 +94,39 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * 初始化 招募條件 類 對此Activity提取
+     * */
     private val initParticipationCondition = { ParticipationCondition.context = this }()
+
+    /**
+     * 展開插頁式廣告
+     * */
+    private fun openInterstitialAd(){
+        val interstitialAd = InterstitialAd(this@MainActivity)
+        interstitialAd.adUnitId = "ca-app-pub-2319576034906153/1180884454"
+        interstitialAd.adListener = object : AdListener() {
+            // Code to be executed when an ad finishes loading.
+            override fun onAdLoaded() {
+                super.onAdLoaded()
+                interstitialAd.show()
+            }
+            // Code to be executed when an ad request fails.
+            //override fun onAdFailedToLoad(adError: LoadAdError) { super.onAdFailedToLoad(adError) }
+            // Code to be executed when the ad is displayed.
+            //override fun onAdOpened() { super.onAdOpened() }
+            // Code to be executed when the user clicks on an ad.
+            //override fun onAdClicked() { super.onAdClicked() }
+            // Code to be executed when the user has left the app.
+            //override fun onAdLeftApplication() { super.onAdLeftApplication() }
+            // Code to be executed when the interstitial ad is closed.
+            override fun onAdClosed() {
+                super.onAdClosed()
+                Toast.makeText(this@MainActivity, R.string.thankYou, Toast.LENGTH_LONG).show()
+            }
+        }
+        interstitialAd.loadAd(AdRequest.Builder().build())
+    }
 
     /**
      * 設置倒時器
@@ -236,27 +268,17 @@ class MainActivity : AppCompatActivity() {
         runJsThenListened: String,
         infinityLoop: Boolean = false
     ): String {
-        /*runJS("""
-            |var element = document.getElementsByClassName("$listClassName")[0];
-            |var mutationObserver = new MutationObserver(function(mutationsList, observer){
-                |mutationsList.forEach(function(mutation){
-                    |$runJsThenListed
-                    |mutationObserver.disconnect();
-                |})
-            |});
-            |mutationObserver.observe(element, { attributes: true });
-        """.trimIndent())*/
-        /*runJS("""
-            |document.getElementsByClassName("$listClassName").forEach(function(element){
-                |var mutationObserver = new MutationObserver(function(mutationsList, observer){
-                    |mutationsList.forEach(function(mutation){
-                        |$runJsThenListed
-                        |mutationObserver.disconnect();
-                    |})
-                |});
-                |mutationObserver.observe(element, { attributes: true });
-            |});
-        """.trimIndent())*/
+        /*"""
+            document.querySelectorAll(".$listClassName").forEach(function(element){
+                var mutationObserver = new MutationObserver(function(mutationsList, observer){
+                    mutationsList.forEach(function(mutation){
+                        $runJsThenListed
+                        mutationObserver.disconnect();
+                    })
+                });
+                mutationObserver.observe(element, { attributes: true });
+            });
+        """*/
         return """
             document.querySelectorAll(".$listenClassName").forEach(function(element){
                 var originalValue = element.getAttribute("$attributeName");
@@ -286,7 +308,7 @@ class MainActivity : AppCompatActivity() {
      * 填上招募訊息
      * */
     private fun pasteRecruit() {
-        val recruitText = recruitEditText?.text.toString()
+        val recruitText = recruitTextView?.text.toString()
         saver?.edit()?.putString("recruitText", recruitText)?.commit()
         webView?.runJS("""document.getElementsByClassName("js-recruiting-line-message")[0].value = "${recruitText}";""")
     }
@@ -485,25 +507,26 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * 更新招募EditText
+     * 更新招募TextView
      * */
-    private fun updateRecruitEditText(text: String? = null) {
-        recruitEditText?.setText(text ?: saver?.getString("recruitText", ""))
+    private fun updateRecruitTextView(text: String? = null) {
+        recruitTextView?.setText(text ?: saver?.getString("recruitText", ""))
     }
 
     /**
      * 設定招募文字
      * */
-    private fun initRecruitEditText() {
-        recruitEditText = findViewById(R.id.recruitEditText)
-        recruitEditText?.setOnClickListener {
+    private fun initRecruitTextView() {
+        recruitTextView = findViewById(R.id.recruitTextView)
+        recruitTextView?.setOnClickListener {
             //設定Click-To-Copy功能
-            val clipboard: ClipboardManager =
-                getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
-            val clip = ClipData.newPlainText("EditText", recruitEditText?.text.toString())
+            val clipboard: ClipboardManager = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+            val clip = ClipData.newPlainText("TextView", recruitTextView?.text.toString())
             clipboard.setPrimaryClip(clip)
             //提示 已複製 成功
             Toast.makeText(this@MainActivity, getString(R.string.copied), Toast.LENGTH_SHORT).show()
+            //展開插頁式廣告
+            openInterstitialAd()
         }
     }
 
@@ -547,31 +570,7 @@ class MainActivity : AppCompatActivity() {
                 startActivity(Intent.createChooser(sharingIntent, getString(R.string.share)))
             }
             R.id.supportUsItem -> {
-                val supportUsAd = InterstitialAd(this@MainActivity)
-                supportUsAd.adUnitId = "ca-app-pub-2319576034906153/1180884454"
-                supportUsAd.adListener = object : AdListener() {
-                    // Code to be executed when an ad finishes loading.
-                    override fun onAdLoaded() {
-                        super.onAdLoaded()
-                        supportUsAd.show()
-                    }
-
-                    // Code to be executed when an ad request fails.
-                    //override fun onAdFailedToLoad(adError: LoadAdError) { super.onAdFailedToLoad(adError) }
-                    // Code to be executed when the ad is displayed.
-                    //override fun onAdOpened() { super.onAdOpened() }
-                    // Code to be executed when the user clicks on an ad.
-                    //override fun onAdClicked() { super.onAdClicked() }
-                    // Code to be executed when the user has left the app.
-                    //override fun onAdLeftApplication() { super.onAdLeftApplication() }
-                    // Code to be executed when the interstitial ad is closed.
-                    override fun onAdClosed() {
-                        super.onAdClosed()
-                        Toast.makeText(this@MainActivity, R.string.thankYou, Toast.LENGTH_LONG)
-                            .show()
-                    }
-                }
-                supportUsAd.loadAd(AdRequest.Builder().build())
+                openInterstitialAd()
             }
             R.id.sourceCodeItem -> {
                 val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(sourceCodeUrl))
@@ -605,7 +604,7 @@ class MainActivity : AppCompatActivity() {
         //設定參加條件RadioButton
         initParticipationConditionRadioButton()
         //設定招募文字
-        initRecruitEditText()
+        initRecruitTextView()
         //設定招募鍵
         initRecruitButton()
         //設定底下廣告
@@ -620,7 +619,7 @@ class MainActivity : AppCompatActivity() {
         webView?.resumeTimers()//請注意，此調用不會暫停JavaScript。要全局暫停JavaScript，請使用pauseTimers()
         //更新介面資訊
         updateParticipationConditionRadioButton()
-        updateRecruitEditText(getRecruitText(intent))
+        updateRecruitTextView(getRecruitText(intent))
     }
 
     override fun onPause() {
@@ -641,7 +640,7 @@ class MainActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         val recruitText = getRecruitText(intent ?: return) ?: return
-        updateRecruitEditText(recruitText)
+        updateRecruitTextView(recruitText)
         quickRecruit()
     }
 }
