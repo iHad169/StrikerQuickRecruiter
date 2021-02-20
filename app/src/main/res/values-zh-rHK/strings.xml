@@ -35,4 +35,6 @@
     <string name="willAutomaticSelect">將自動選擇</string>
     <string name="seconds">秒</string>
     <string name="copied">已複製</string>
+    <string name="about">關於</string>
+    <string name="version">版本</string>
 </resources>

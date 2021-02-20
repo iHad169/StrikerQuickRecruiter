@@ -43,4 +43,8 @@
         android:title="@string/teaching"
         android:id="@+id/teachingItem"
         app:showAsAction="never"/>
+    <item
+        android:title="@string/about"
+        android:id="@+id/about"
+        app:showAsAction="never"/>
 </menu>

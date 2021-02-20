@@ -34,4 +34,6 @@
     <string name="willAutomaticSelect">Will Automatic Select</string>
     <string name="seconds">Seconds</string>
     <string name="copied">Copied</string>
+    <string name="about">About</string>
+    <string name="version">Version</string>
 </resources>

@@ -16,7 +16,6 @@ package org.sourcekey.strikerquickrecruiter
 
 //import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
 
-import android.R.attr.label
 import android.app.AlertDialog
 import android.content.*
 import android.content.pm.PackageManager
@@ -28,8 +27,8 @@ import android.view.MenuItem
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Button
-import android.widget.TextView
 import android.widget.RadioButton
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.gms.ads.*
@@ -59,7 +58,7 @@ class MainActivity : AppCompatActivity() {
 
     private var recruitTextView: TextView? = null
 
-    private val recruitButtonClickWaitTime: Long = 3000
+    private val recruitButtonClickWaitTime: Long = 5000
 
     private val recruitWillAutomaticSelectWaitTime: Long = 5000
 
@@ -102,7 +101,7 @@ class MainActivity : AppCompatActivity() {
     /**
      * 展開插頁式廣告
      * */
-    private fun openInterstitialAd(){
+    private fun openInterstitialAd(onAdClosed: () -> Unit = fun() {}){
         val interstitialAd = InterstitialAd(this@MainActivity)
         interstitialAd.adUnitId = "ca-app-pub-2319576034906153/1180884454"
         interstitialAd.adListener = object : AdListener() {
@@ -122,7 +121,7 @@ class MainActivity : AppCompatActivity() {
             // Code to be executed when the interstitial ad is closed.
             override fun onAdClosed() {
                 super.onAdClosed()
-                Toast.makeText(this@MainActivity, R.string.thankYou, Toast.LENGTH_LONG).show()
+                onAdClosed()
             }
         }
         interstitialAd.loadAd(AdRequest.Builder().build())
@@ -317,7 +316,10 @@ class MainActivity : AppCompatActivity() {
      * 進行招募
      * */
     private fun executeRecruit() {
-        webView?.runJS("""document.getElementsByClassName("js-recruiting-button")[0].click();""")
+        webView?.runJS(
+            """document.getElementsByClassName("js-recruiting-button")[0].click();""",
+            1000
+        )
     }
 
     /**
@@ -328,7 +330,7 @@ class MainActivity : AppCompatActivity() {
             wrapSetNodeChangedListener(
                 "js-recruiting-modal-content-loading", "style",
                 """document.getElementsByClassName("js-recruiting-modal-launch")[0].click();"""
-            )
+            ), 1000
         )
     }
 
@@ -420,10 +422,6 @@ class MainActivity : AppCompatActivity() {
             R.layout.bottom_ad_dialog_layout,
             null
         )
-        //設定底下廣告
-        MobileAds.initialize(this) {}
-        val bottomAdView: AdView = bottomAdDialogLayout.findViewById(R.id.bottomAdView)
-        bottomAdView.loadAd(AdRequest.Builder().build())
         //設置Dialog
         val dialog = AlertDialog.Builder(this)
             .setTitle(R.string.teaching)
@@ -440,6 +438,10 @@ class MainActivity : AppCompatActivity() {
             .setOnCancelListener { quickRecruit() }
             .create()
         dialog.show()
+        //設定底下廣告
+        MobileAds.initialize(dialog.context) {}
+        val bottomAdView: AdView = bottomAdDialogLayout.findViewById(R.id.bottomAdView)
+        bottomAdView.loadAd(AdRequest.Builder().build())
         //設置倒時器
         setTimer(fun(rt) {
             val waitTime = rt.toInt() / 1000
@@ -546,7 +548,7 @@ class MainActivity : AppCompatActivity() {
                     clickWaitTime = 0
                     recruitButton.setText(R.string.recruit)
                 }, recruitButtonClickWaitTime)
-            }
+            }else{ openInterstitialAd{ quickRecruit() } }
         }
     }
 
@@ -570,7 +572,9 @@ class MainActivity : AppCompatActivity() {
                 startActivity(Intent.createChooser(sharingIntent, getString(R.string.share)))
             }
             R.id.supportUsItem -> {
-                openInterstitialAd()
+                openInterstitialAd {
+                    Toast.makeText(this@MainActivity, R.string.thankYou, Toast.LENGTH_LONG).show()
+                }
             }
             R.id.sourceCodeItem -> {
                 val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(sourceCodeUrl))
@@ -581,6 +585,10 @@ class MainActivity : AppCompatActivity() {
             }
             R.id.teachingItem -> {
                 showTeaching()
+            }
+            R.id.about -> {
+                val switchActivityIntent = Intent(this, AboutActivity::class.java)
+                startActivity(switchActivityIntent)
             }
         }
         return super.onOptionsItemSelected(item)

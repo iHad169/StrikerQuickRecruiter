@@ -23,8 +23,5 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:adSize="SMART_BANNER"
-        app:adUnitId="ca-app-pub-2319576034906153/4638759646"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:adUnitId="ca-app-pub-2319576034906153/4638759646"/>
 </LinearLayout>
