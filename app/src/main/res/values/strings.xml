@@ -36,4 +36,8 @@
     <string name="copied">Copied</string>
     <string name="about">About</string>
     <string name="version">Version</string>
+    <string name="restore">Restore</string>
+    <string name="recentStartLink">Recent Start  Link</string>
+    <string name="switchTheme">Switch Theme</string>
+    <string name="ordinalTheme">Ordinal Theme</string>
 </resources>

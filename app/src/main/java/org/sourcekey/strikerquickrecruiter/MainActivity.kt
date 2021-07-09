@@ -18,26 +18,28 @@ package org.sourcekey.strikerquickrecruiter
 
 import android.app.AlertDialog
 import android.content.*
-import android.content.pm.PackageManager
+import android.content.res.Resources
 import android.net.Uri
 import android.os.Bundle
-import android.os.Handler
+import android.text.SpannableString
+import android.text.style.ForegroundColorSpan
 import android.view.Menu
 import android.view.MenuItem
 import android.webkit.WebView
-import android.webkit.WebViewClient
-import android.widget.Button
-import android.widget.RadioButton
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.GravityCompat
+import androidx.drawerlayout.widget.DrawerLayout
 import com.google.android.gms.ads.*
-import java.net.URISyntaxException
+import com.google.android.gms.ads.interstitial.InterstitialAd
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
+import com.google.android.material.navigation.NavigationView
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import kotlinx.android.synthetic.main.activity_main.*
 
 
 class MainActivity : AppCompatActivity() {
-
-    private val recruiterUrl = "https://gamewith.tw/monsterstrike/lobby"
 
     private val playStoreUrl =
         "https://play.google.com/store/apps/details?id=org.sourcekey.strikerquickrecruiter"
@@ -48,7 +50,13 @@ class MainActivity : AppCompatActivity() {
 
     private var saver: SharedPreferences? = null
 
-    private var webView: WebView? = null
+    private var drawerLayout: DrawerLayout? = null
+
+    private var recentStartList: ArrayListWithListenEvent<String> = ArrayListWithListenEvent()
+
+    private var navView: NavigationView? = null
+
+    private var recruiterView: RecruiterView? = null
 
     private var extremeLuckOnlyRadioButton: RadioButton? = null
 
@@ -62,46 +70,34 @@ class MainActivity : AppCompatActivity() {
 
     private val recruitWillAutomaticSelectWaitTime: Long = 5000
 
-    /**
-     * 招募條件
-     * */
-    private enum class ParticipationCondition(val resourceId: Int) {
-        //僅限極運
-        extremeLuckOnly(R.string.extremeLuckOnly) {
-            override fun toString(): String = context?.getString(resourceId) ?: toString()
-        },
-
-        //僅限適正角色
-        appropriateRoleOnly(R.string.appropriateRoleOnly) {
-            override fun toString(): String = context?.getString(resourceId) ?: toString()
-        },
-
-        //誰都可以
-        anyoneCan(R.string.anyoneCan) {
-            override fun toString(): String = context?.getString(resourceId) ?: toString()
-        };
-
-        companion object {
-            var context: Context? = null
-            fun valueOf(value: Int): ParticipationCondition? {
-                return values().getOrNull(value)
-            }
-
-            fun strings(): Array<String> {
-                return values().map { it.toString() }.toTypedArray()
-            }
-        }
-    }
+    private var currentTheme: Int = R.style.OrdinalTheme
 
     /**
      * 初始化 招募條件 類 對此Activity提取
      * */
-    private val initParticipationCondition = { ParticipationCondition.context = this }()
+    private val initParticipationCondition = run {
+        ParticipationCondition.context = this
+    }
 
     /**
      * 展開插頁式廣告
      * */
     private fun openInterstitialAd(onAdClosed: () -> Unit = fun() {}){
+        InterstitialAd.load(
+            this@MainActivity,
+            "ca-app-pub-2319576034906153/1180884454",
+            AdRequest.Builder().build(),
+            object : InterstitialAdLoadCallback() {
+                override fun onAdFailedToLoad(adError: LoadAdError) {
+                    onAdClosed()
+                }
+                override fun onAdLoaded(interstitialAd: InterstitialAd) {
+                    super.onAdLoaded(interstitialAd)
+                    interstitialAd.show(this@MainActivity)
+                }
+            }
+        )
+        /*
         val interstitialAd = InterstitialAd(this@MainActivity)
         interstitialAd.adUnitId = "ca-app-pub-2319576034906153/1180884454"
         interstitialAd.adListener = object : AdListener() {
@@ -124,35 +120,7 @@ class MainActivity : AppCompatActivity() {
                 onAdClosed()
             }
         }
-        interstitialAd.loadAd(AdRequest.Builder().build())
-    }
-
-    /**
-     * 設置倒時器
-     * */
-    private fun setTimer(
-        onUpdate: (remainingTime: Long) -> Unit,
-        onTimeout: () -> Unit,
-        delayTime: Long,
-        updateTime: Long = 1000,
-        infinityLoop: Boolean = false
-    ) {
-        var waitTime = delayTime
-        val handler = Handler()
-        handler.removeCallbacksAndMessages(null)
-        fun loop() {
-            handler.postDelayed({
-                waitTime -= updateTime
-                if (0 < waitTime || infinityLoop) {
-                    onUpdate(waitTime)
-                    loop()
-                } else {
-                    onTimeout()
-                }
-            }, updateTime)
-        }
-        onUpdate(waitTime)
-        loop()
+        interstitialAd.loadAd(AdRequest.Builder().build())*/
     }
 
     /**
@@ -248,119 +216,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * 響WebView執行JavaScript程序
-     *
-     * 發現如直接寫JS程序
-     * 唔加setTimeout()
-     * 會執行無效
-     * */
-    private fun WebView.runJS(jsCode: String, delay: Int = 0) {
-        loadUrl("""javascript:window.setTimeout(function(){$jsCode}, ${delay});""")
-    }
-
-    /**
-     * 包裝成 設置Node改變左嘅監聽器 嘅JS程序
-     * */
-    private fun wrapSetNodeChangedListener(
-        listenClassName: String,
-        attributeName: String,
-        runJsThenListened: String,
-        infinityLoop: Boolean = false
-    ): String {
-        /*"""
-            document.querySelectorAll(".$listClassName").forEach(function(element){
-                var mutationObserver = new MutationObserver(function(mutationsList, observer){
-                    mutationsList.forEach(function(mutation){
-                        $runJsThenListed
-                        mutationObserver.disconnect();
-                    })
-                });
-                mutationObserver.observe(element, { attributes: true });
-            });
-        """*/
-        return """
-            document.querySelectorAll(".$listenClassName").forEach(function(element){
-                var originalValue = element.getAttribute("$attributeName");
-                var timer = window.setInterval(function(){
-                    var currentValue = element.getAttribute("$attributeName");
-                    if(originalValue !== currentValue){
-                        $runJsThenListened
-                        if(!$infinityLoop){clearInterval(timer);}
-                    }
-                }, 1000);
-            });
-        """
-    }
-
-    /**
-     * 選擇招募條件
-     * */
-    private fun selectRecruitConditions(participationCondition: ParticipationCondition) {
-        saver?.edit()?.putString(
-            "participationCondition",
-            participationCondition.ordinal.toString()
-        )?.commit()
-        webView?.runJS("""document.getElementsByName("js-recruiting-tags")[${participationCondition.ordinal}].checked = true;""")
-    }
-
-    /**
-     * 填上招募訊息
-     * */
-    private fun pasteRecruit() {
-        val recruitText = recruitTextView?.text.toString()
-        saver?.edit()?.putString("recruitText", recruitText)?.commit()
-        webView?.runJS("""document.getElementsByClassName("js-recruiting-line-message")[0].value = "${recruitText}";""")
-    }
-
-    /**
-     * 進行招募
-     * */
-    private fun executeRecruit() {
-        webView?.runJS(
-            """document.getElementsByClassName("js-recruiting-button")[0].click();""",
-            1000
-        )
-    }
-
-    /**
-     * 進入返遊戲
-     * */
-    private fun startGame() {
-        webView?.runJS(
-            wrapSetNodeChangedListener(
-                "js-recruiting-modal-content-loading", "style",
-                """document.getElementsByClassName("js-recruiting-modal-launch")[0].click();"""
-            ), 1000
-        )
-    }
-
-    /**
-     * 初始化 参加招募者團隊 按鈕
-     * */
-    private fun initParticipateButton() {
-        webView?.runJS(
-            """
-                window.setInterval(function(){
-                    document.querySelectorAll(".js-participate-anchor-launch").forEach(function(element){
-                        if(element.href.startsWith("intent://")){
-                            element.click();
-                            element.parentNode.removeChild(element);
-                        }
-                    });
-                }, 1000);
-            """
-        )
-    }
-
-    /**
-     * 快速招募
+     * 招募
      *
      * 一次過填寫招募所需嘅資訊然後進行招募
      * */
-    private fun quickRecruit() {
-        pasteRecruit()
-        executeRecruit()
-        startGame()
+    private fun recruit(recruitText: String? = null) {
+        recruiterView?.pasteRecruit(recruitText?: recruitTextView?.text.toString())
+        recruiterView?.executeRecruit()
     }
 
     /**
@@ -393,6 +255,10 @@ class MainActivity : AppCompatActivity() {
      * 初始化參加條件RadioButton
      * */
     private fun initParticipationConditionRadioButton() {
+        fun selectRecruitConditions(participationCondition: ParticipationCondition) {
+            saver?.edit()?.putString("participationCondition", participationCondition.ordinal.toString())?.apply()
+            recruiterView?.selectRecruitConditions(participationCondition)
+        }
         extremeLuckOnlyRadioButton = findViewById(R.id.extremeLuckOnlyRadioButton)
         appropriateRoleOnlyRadioButton = findViewById(R.id.appropriateRoleOnlyRadioButton)
         anyoneCanRadioButton = findViewById(R.id.anyoneCanRadioButton)
@@ -434,8 +300,8 @@ class MainActivity : AppCompatActivity() {
                 updateParticipationConditionRadioButton(ParticipationCondition.valueOf(i))
                 di?.dismiss()
             }
-            .setOnDismissListener { quickRecruit() }
-            .setOnCancelListener { quickRecruit() }
+            .setOnDismissListener { recruit() }
+            .setOnCancelListener { recruit() }
             .create()
         dialog.show()
         //設定底下廣告
@@ -452,67 +318,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * 初始化WebView
-     * */
-    private fun initWebView() {
-        webView = findViewById(R.id.webView)
-        val webViewSettings = webView?.settings
-        webViewSettings?.domStorageEnabled = true
-        webViewSettings?.javaScriptEnabled = true//設定同JavaScript互Call權限
-        webViewSettings?.javaScriptCanOpenWindowsAutomatically = true//設定允許畀JavaScript彈另一個window
-        webView?.webViewClient = object : WebViewClient() {
-            override fun onPageFinished(webView: WebView, url: String) {
-                super.onPageFinished(webView, url)
-                //初始化 参加招募者團隊 按鈕
-                initParticipateButton()
-                //初始化上次所選嘅RadioButton
-                selectRecruitConditions(getLastTimeSelectParticipationCondition())
-                //如由怪物彈殊啟動此程式就顯示招募條件選擇
-                if (getRecruitText(intent) != null) {
-                    showSelectParticipationCondition()
-                }
-            }
-
-            override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
-                if (url!!.startsWith("intent://")) {
-                    //Toast.makeText(this@MainActivity, url, Toast.LENGTH_SHORT).show()
-                    try {
-                        val context = view!!.context
-                        val intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME)
-                        if (intent != null) {
-                            view.stopLoading()
-                            val packageManager = context.packageManager
-                            val info = packageManager.resolveActivity(
-                                intent,
-                                PackageManager.MATCH_DEFAULT_ONLY
-                            )
-                            if (info != null) {
-                                context.startActivity(intent)
-                            } else {
-                                val fallbackUrl =
-                                    intent.getStringExtra("browser_fallback_url") ?: return false
-                                view.loadUrl(fallbackUrl)
-
-                                // or call external broswer
-                                // Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(fallbackUrl));
-                                // context.startActivity(browserIntent);
-                            }
-                            return true
-                        }
-                    } catch (e: URISyntaxException) {
-                    }
-                }
-                return false
-            }
-        }
-        webView?.loadUrl(recruiterUrl)
-    }
-
-    /**
      * 更新招募TextView
      * */
     private fun updateRecruitTextView(text: String? = null) {
         recruitTextView?.setText(text ?: saver?.getString("recruitText", ""))
+        if(text != null){saver?.edit()?.putString("recruitText", text)?.apply()}
     }
 
     /**
@@ -540,7 +350,7 @@ class MainActivity : AppCompatActivity() {
         var clickWaitTime = 0
         recruitButton.setOnClickListener {
             if (clickWaitTime <= 0) {
-                quickRecruit()
+                recruit()
                 setTimer(fun(rt) {
                     clickWaitTime = rt.toInt() / 1000
                     recruitButton.setText("${getString(R.string.recruit)} ($clickWaitTime)")
@@ -548,7 +358,78 @@ class MainActivity : AppCompatActivity() {
                     clickWaitTime = 0
                     recruitButton.setText(R.string.recruit)
                 }, recruitButtonClickWaitTime)
-            }else{ openInterstitialAd{ quickRecruit() } }
+            }else{ openInterstitialAd{ recruit() } }
+        }
+    }
+
+    /**
+     * 更新NavigationView
+     * */
+    private fun updateNavigationView(addUrl: String? = null){
+        //增加Url
+        if(addUrl != null){
+            //更新 最近啟動連結表
+            recentStartList.remove(addUrl)
+            recentStartList.add(0, addUrl)
+            val maxSize = 20
+            if(maxSize < recentStartList.size){
+                try{ recentStartList.removeAt(maxSize) }catch (e: Exception){}
+            }
+            //儲存 最近啟動連結表
+            saver?.edit()?.putString("recentStartLinkList", Gson().toJson(recentStartList))?.apply()
+        }
+        //更新NavigationView
+        navView?.menu?.clear()
+        recentStartList.forEachIndexed { index, url ->
+            val s = SpannableString(url)
+            s.setSpan(ForegroundColorSpan(url.rendRGB()), 0, s.length, 0)
+            navView?.menu?.add(0, index, index, s)
+        }
+    }
+
+    /**
+     * 初始化NavigationView
+     * */
+    private fun initNavigationView(){
+        //新增 顯示NavigationView 按鈕
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setHomeAsUpIndicator(R.drawable.ic_menu)
+        //初始化NavigationView相關值
+        drawerLayout = findViewById(R.id.drawer_layout)
+        recentStartList = try{Gson().fromJson(
+            saver?.getString("recentStartLinkList", ""),
+            object : TypeToken<ArrayListWithListenEvent<String>>(){}.type
+        )}catch (e: Exception){ArrayListWithListenEvent()}
+        navView = findViewById(R.id.navView)
+        //設定NavigationView
+        navView?.setNavigationItemSelectedListener {
+            try{
+                val url = recentStartList.getOrNull(it.itemId)
+                Toast.makeText(this@MainActivity, url, Toast.LENGTH_SHORT).show()
+                val intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME)
+                recruiterView?.stopLoading()
+                startActivity(intent)
+            }catch(e: Exception){Toast.makeText(this, e.toString(), Toast.LENGTH_SHORT).show()}
+            return@setNavigationItemSelectedListener true
+        }
+        recentStartList.onElementChange = fun(){ updateNavigationView() }
+        updateNavigationView()
+    }
+
+    /**
+     * 初始化招募器
+     * */
+    private fun initRecruiterView(){
+        recruiterView = findViewById(R.id.recruiterView)
+        recruiterView?.onPageFinished = fun(webView, url){
+            //初始化上次所選嘅RadioButton
+            recruiterView?.selectRecruitConditions(getLastTimeSelectParticipationCondition())
+            //如由怪物彈殊啟動此程式就顯示招募條件選擇
+            if (getRecruitText(intent) != null) { showSelectParticipationCondition() }
+        }
+        recruiterView?.onReturnGame = fun(webView, url){
+            url?:return
+            updateNavigationView()
         }
     }
 
@@ -559,9 +440,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
-            R.id.refreshItem -> {
-                //webView?.reload()
-                webView?.loadUrl(recruiterUrl)
+            android.R.id.home -> {
+                drawerLayout?.openDrawer(GravityCompat.START)
+            }
+            R.id.restoreItem -> {
+                recruiterView?.restore()
             }
             R.id.shareItem -> {
                 val sharingIntent = Intent(Intent.ACTION_SEND)
@@ -586,6 +469,29 @@ class MainActivity : AppCompatActivity() {
             R.id.teachingItem -> {
                 showTeaching()
             }
+            /*R.id.switchThemeItem -> {
+                setTheme(R.style.OldTheme)
+                //recreate()
+                setContentView(R.layout.activity_main)
+                AlertDialog.Builder(this)
+                    .setTitle(R.string.switchTheme)
+                    .setCancelable(true)
+                    .setSingleChoiceItems(
+                        R.style,
+                        getLastTimeSelectParticipationCondition().ordinal
+                    ) { di, i ->
+                        updateParticipationConditionRadioButton(ParticipationCondition.valueOf(i))
+                        di?.dismiss()
+                    }
+                    .setPositiveButton(R.string.need) { dialogInterface, which ->
+                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(teachingURL)))
+                        saver?.edit()?.putBoolean("isWatchTeaching", true)?.commit()
+                    }
+                    .setNegativeButton(R.string.notNeed) { dialogInterface, which ->
+                        saver?.edit()?.putBoolean("isWatchTeaching", true)?.commit()
+                    }
+                    .create().show()
+            }*/
             R.id.about -> {
                 val switchActivityIntent = Intent(this, AboutActivity::class.java)
                 startActivity(switchActivityIntent)
@@ -607,14 +513,16 @@ class MainActivity : AppCompatActivity() {
         if (saver?.getBoolean("isAgreeUseConditions", false) != true) {
             showUseConditions()
         }
-        //設定webView
-        initWebView()
-        //設定參加條件RadioButton
+        //初始化NavigationView
+        initNavigationView()
+        //初始化參加條件RadioButton
         initParticipationConditionRadioButton()
-        //設定招募文字
+        //初始化招募文字
         initRecruitTextView()
-        //設定招募鍵
+        //初始化招募鍵
         initRecruitButton()
+        //初始化招募器
+        initRecruiterView()
         //設定底下廣告
         MobileAds.initialize(this) {}
         val bottomAdView: AdView = findViewById(R.id.bottomAdView)
@@ -623,25 +531,24 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        webView?.onResume()
-        webView?.resumeTimers()//請注意，此調用不會暫停JavaScript。要全局暫停JavaScript，請使用pauseTimers()
+        recruiterView?.resume()
         //更新介面資訊
         updateParticipationConditionRadioButton()
         updateRecruitTextView(getRecruitText(intent))
     }
 
     override fun onPause() {
-        webView?.onPause()
+        recruiterView?.pause()
         super.onPause()
     }
 
     override fun onStop() {
-        webView?.pauseTimers()//如果應用程序已暫停，這可能很有用。
+        recruiterView?.stop()
         super.onStop()
     }
 
     override fun onDestroy() {
-        webView?.destroy()
+        recruiterView?.destroy()
         super.onDestroy()
     }
 
@@ -649,6 +556,12 @@ class MainActivity : AppCompatActivity() {
         super.onNewIntent(intent)
         val recruitText = getRecruitText(intent ?: return) ?: return
         updateRecruitTextView(recruitText)
-        quickRecruit()
+        recruit()
+    }
+
+    override fun getTheme(): Resources.Theme {
+        val theme = super.getTheme()
+        //theme.applyStyle(R.style.OldTheme, true)
+        return theme
     }
 }

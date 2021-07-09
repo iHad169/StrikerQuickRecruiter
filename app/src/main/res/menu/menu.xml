@@ -17,10 +17,11 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
-        android:title="@string/refresh"
-        android:id="@+id/refreshItem"
+        android:id="@+id/restoreItem"
         android:icon="@drawable/ic_baseline_refresh_24"
-        app:showAsAction="ifRoom"/>
+        android:title="@string/restore"
+        app:showAsAction="ifRoom" />
+
     <item
         android:title="@string/share"
         android:id="@+id/shareItem"
@@ -31,18 +32,27 @@
         android:title="@string/supportUs"
         android:id="@+id/supportUsItem"
         app:showAsAction="never"/>
+
     <item
         android:title="@string/sourceCode"
         android:id="@+id/sourceCodeItem"
         app:showAsAction="never"/>
+
     <item
         android:title="@string/useConditions"
         android:id="@+id/useConditionsItem"
         app:showAsAction="never"/>
+
     <item
         android:title="@string/teaching"
         android:id="@+id/teachingItem"
         app:showAsAction="never"/>
+
+    <!--item
+        android:title="@string/switchTheme"
+        android:id="@+id/switchThemeItem"
+        app:showAsAction="never"/-->
+
     <item
         android:title="@string/about"
         android:id="@+id/about"

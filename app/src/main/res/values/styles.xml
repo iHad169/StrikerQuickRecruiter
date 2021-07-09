@@ -12,12 +12,37 @@
   ~ along with MonsterStrikeQuickRecruiter.  If not, see <https://www.gnu.org/licenses/>.
   -->
 
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+    <style name="OrdinalTheme" parent="Theme.AppCompat.Light.DarkActionBar">
         <!-- Customize your theme here. -->
+        <item name="colorPrimary">#0173DE</item>
+        <item name="colorPrimaryDark">#0139BE</item>
+        <item name="colorPrimaryVariant">#25A8DD</item>
+        <item name="colorSecondary">#F8B435</item>
+        <item name="colorSecondaryVariant">#EB8B27</item>
+        <item name="android:navigationBarColor" tools:targetApi="lollipop">#0172DE</item>
+        <item name="android:statusBarColor" tools:targetApi="lollipop">#0139BE</item>
+        <item name="colorAccent">#F8B435</item>
+        <item name="colorButtonNormal">#F8B435</item>
+    </style>
+    <style name="OldTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+        <!-- Primary brand color. -->
         <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorPrimaryVariant">@color/colorPrimaryDark</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+        <!-- Secondary brand color. -->
+        <item name="colorSecondary">@color/colorAccent</item>
+        <item name="colorSecondaryVariant">@color/colorSecondaryVariant</item>
+        <item name="colorOnSecondary">@android:color/black</item>
+        <!-- Status bar color. -->
+        <item name="android:navigationBarColor" tools:targetApi="lollipop">@color/colorPrimary</item>
+        <item name="android:statusBarColor" tools:targetApi="lollipop">@color/colorPrimaryDark</item>
+        <!-- Customize your theme here. -->
         <item name="colorAccent">@color/colorAccent</item>
     </style>
+    <!--style name="AppTheme.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style-->
 </resources>

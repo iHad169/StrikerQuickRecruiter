@@ -37,4 +37,7 @@
     <string name="copied">已複製</string>
     <string name="about">關於</string>
     <string name="version">版本</string>
+    <string name="restore">還原</string>
+    <string name="recentStartLink">最近啟動連結</string>
+    <string name="switchTheme">切換主題</string>
 </resources>
