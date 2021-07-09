@@ -427,10 +427,7 @@ class MainActivity : AppCompatActivity() {
             //如由怪物彈殊啟動此程式就顯示招募條件選擇
             if (getRecruitText(intent) != null) { showSelectParticipationCondition() }
         }
-        recruiterView?.onReturnGame = fun(webView, url){
-            url?:return
-            updateNavigationView()
-        }
+        recruiterView?.onReturnGame = fun(webView, url){ updateNavigationView(url?:return) }
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
