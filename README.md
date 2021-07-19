@@ -6,6 +6,9 @@
 # Striker Quick Recruiter 彈珠手快速招募器
 彈珠手快速招募器 - 一個運用Gamewith自動招募留言板(https://gamewith.tw/monsterstrike/lobby) 快速招募隊友的移動應用程序
 
+### 安裝
+<a href='https://play.google.com/store/apps/details?id=org.sourcekey.strikerquickrecruiter&pcampaignid=pcampaignidMKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1'><img alt='Get it on Google Play' src='https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png' width="200"/></a>
+
 ### 開發者需知
 IDE: Android Studio
 
