@@ -14,6 +14,7 @@
 
 package org.sourcekey.strikerquickrecruiter
 
+import android.annotation.SuppressLint
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -32,7 +33,12 @@ import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.MobileAds
 import java.net.URISyntaxException
+import android.webkit.WebChromeClient
 
+
+
+
+@SuppressLint("SetJavaScriptEnabled")
 class RecruiterView : WebView{
 
     private val recruiterUrl = "https://gamewith.tw/monsterstrike/lobby"
@@ -62,8 +68,8 @@ class RecruiterView : WebView{
     private fun wrapSetNodeChangedListener(
         listenClassName: String,
         attributeName: String,
-        runJsThenListened: String,
-        infinityLoop: Boolean = false
+        infinityLoop: Boolean = false,
+        runJsThenListened: ()->String
     ): String {
         /*"""
             document.querySelectorAll(".$listClassName").forEach(function(element){
@@ -82,7 +88,7 @@ class RecruiterView : WebView{
                 var timer = window.setInterval(function(){
                     var currentValue = element.getAttribute("$attributeName");
                     if(originalValue !== currentValue){
-                        $runJsThenListened
+                        ${runJsThenListened()}
                         if(!$infinityLoop){clearInterval(timer);}
                     }
                 }, 1000);
@@ -97,41 +103,49 @@ class RecruiterView : WebView{
      * 唔加setTimeout()
      * 會執行無效
      * */
-    private fun runJS(jsCode: String, delay: Int = 0) {
-        loadUrl("""javascript:window.setTimeout(function(){$jsCode}, ${delay});""")
+    private fun runJS(delay: Int = 0, jsCode: ()->String) {
+        loadUrl("""javascript:window.setTimeout(function(){${jsCode()}}, ${delay});""")
     }
 
     /**
      * 選擇招募條件
      * */
     fun selectRecruitConditions(participationCondition: ParticipationCondition) {
-        runJS("""document.getElementsByName("js-recruiting-tags")[${participationCondition.ordinal}].checked = true;""")
+        runJS{
+            """document.getElementsByName("js-recruiting-tags")[${participationCondition.ordinal}].checked = true;"""
+        }
     }
 
     /**
      * 填上招募訊息
      * */
     fun pasteRecruit(recruitText: String) {
-        runJS("""document.getElementsByClassName("js-recruiting-line-message")[0].value = "${recruitText}";""")
+        runJS{
+            """document.getElementsByClassName("js-recruiting-line-message")[0].value = "${recruitText}";"""
+        }
     }
 
     /**
      * 進入返遊戲
      * */
     private fun returnGame() {
-        runJS(
-            wrapSetNodeChangedListener(
-                "js-recruiting-modal-content-loading", "style",
+        runJS(1000){
+            wrapSetNodeChangedListener("js-recruiting-modal-content-loading", "style"){
                 """document.getElementsByClassName("js-recruiting-modal-launch")[0].click();"""
-            ), 1000
-        )
+            }
+        }
     }
 
     /**
      * 進行招募
      * */
     fun executeRecruit() {
-        runJS("""document.getElementsByClassName("js-recruiting-button")[0].click();""", 1000)
+        runJS{
+            wrapSetNodeChangedListener("js-recruiting-conditions", "style") {
+                """document.getElementsByClassName("js-recruiting-button")[0].click();"""
+            }
+        }
+        //runJS("""document.getElementsByClassName("js-recruiting-button")[0].click();""", 1000)
         returnGame()
     }
 
@@ -153,7 +167,7 @@ class RecruiterView : WebView{
      * 初始化 参加招募者團隊 按鈕
      * */
     private fun initParticipateButton() {
-        runJS(
+        runJS {
             """
                 window.setInterval(function(){
                     document.querySelectorAll(".js-participate-anchor-launch").forEach(function(element){
@@ -164,7 +178,14 @@ class RecruiterView : WebView{
                     });
                 }, 1000);
             """
-        )
+        }
+    }
+
+    /**
+     *
+     * */
+    private fun testJsIsWork(){
+        runJS{"""alert("Hello! I am an alert box!");"""}
     }
 
     /**

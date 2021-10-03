@@ -24,8 +24,8 @@ android {
         applicationId "org.sourcekey.strikerquickrecruiter"
         minSdkVersion 17
         targetSdkVersion 30
-        versionCode 14
-        versionName "v14.0"
+        versionCode 15
+        versionName "v15.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled true
